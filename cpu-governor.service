@@ -1,0 +1,18 @@
+[Unit]
+Description=CPU Governor Backend Service
+After=multi-user.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/cpu-governor-dispatch
+Restart=always
+RestartSec=1
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

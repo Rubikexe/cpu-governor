@@ -1,0 +1,9 @@
+{
+  "uuid": "cpu-governor@rubik",
+  "name": "CPU Governor",
+  "description": "Quick Settings toggle for CPU governor",
+  "shell-version": ["46"],
+  "settings-schema": "org.gnome.shell.extensions.cpu-governor",
+  "gettext-domain": "cpu-governor",
+  "version": 1
+}

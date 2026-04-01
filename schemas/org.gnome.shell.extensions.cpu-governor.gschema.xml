@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.cpu-governor" path="/org/gnome/shell/extensions/cpu-governor/">
+    <key name="boot-boost-enabled" type="b">
+      <default>true</default>
+      <summary>Enable boot boost</summary>
+      <description>Enable boot boost on startup: schedutil for 30 seconds, then powersave.</description>
+    </key>
+    <key name="boot-boost-duration" type="i">
+      <default>30</default>
+      <summary>Boot boost duration</summary>
+      <description>How many seconds boot boost should last before switching to powersave.</description>
+    </key>
+    <key name="hide-power-profile-tile" type="b">
+      <default>false</default>
+      <summary>Hide GNOME power profile tile</summary>
+      <description>Hide the default GNOME power mode tile from Quick Settings.</description>
+</key>
+<key name="panel-position" type="s">
+  <default>'right'</default>
+  <summary>Panel position</summary>
+  <description>Where to show CPU info on the top bar: left, center, or right.</description>
+</key>
+
+<key name="panel-padding-left" type="i">
+  <default>8</default>
+  <summary>Panel left padding</summary>
+  <description>Left padding for the CPU info indicator in pixels.</description>
+</key>
+
+<key name="panel-padding-right" type="i">
+  <default>8</default>
+  <summary>Panel right padding</summary>
+  <description>Right padding for the CPU info indicator in pixels.</description>
+</key>
+<key name="show-panel-info" type="b">
+  <default>true</default>
+  <summary>Show CPU info on top bar</summary>
+  <description>Show CPU temperature/frequency on the top panel.</description>
+</key>
+
+<key name="panel-info-mode" type="s">
+  <default>'both'</default>
+  <summary>CPU info display mode</summary>
+  <description>What to show on the panel: temperature, frequency, or both.</description>
+</key>
+<key name="refresh-interval" type="i">
+  <default>5</default>
+  <summary>Refresh interval</summary>
+  <description>How often CPU info and governor state should refresh, in seconds.</description>
+</key>
+  </schema>
+</schemalist>

@@ -1,0 +1,139 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: pl\n"
+
+msgid "CPU Governor"
+msgstr "CPU Governor"
+
+msgid "CPU"
+msgstr "CPU"
+
+msgid "Governor"
+msgstr "Governor"
+
+msgid "Select mode"
+msgstr "Wybierz tryb"
+
+msgid "Powersave"
+msgstr "Oszczędzanie"
+
+msgid "Balanced"
+msgstr "Zrównoważony"
+
+msgid "Performance"
+msgstr "Wydajność"
+
+msgid "CPU Info"
+msgstr "Informacje CPU"
+
+msgid "Backend not installed. Click here to open settings."
+msgstr "Backend nie jest zainstalowany. Kliknij tutaj, aby otworzyć ustawienia."
+
+msgid "Boot boost"
+msgstr "Boost przy starcie"
+
+msgid "Use Balanced briefly after login, then switch to Powersave"
+msgstr "Po zalogowaniu użyj trybu Zrównoważony, a potem przełącz na Oszczędzanie"
+
+msgid "Boost duration"
+msgstr "Czas boostu"
+
+msgid "How long Balanced stays active after login"
+msgstr "Jak długo tryb Zrównoważony ma być aktywny po zalogowaniu"
+
+msgid "Hide Power Mode tile"
+msgstr "Ukryj kafelek Tryb zasilania"
+
+msgid "Hide GNOME’s default Power Mode tile"
+msgstr "Ukryj domyślny kafelek Tryb zasilania GNOME"
+
+msgid "Show panel info"
+msgstr "Pokaż informacje na pasku"
+
+msgid "Display CPU temperature and frequency on the bar"
+msgstr "Wyświetlaj temperaturę i taktowanie procesora na pasku"
+
+msgid "Display mode"
+msgstr "Tryb wyświetlania"
+
+msgid "Choose what to show on the top bar"
+msgstr "Wybierz, co ma być pokazywane na pasku"
+
+msgid "Temperature"
+msgstr "Temperatura"
+
+msgid "Frequency"
+msgstr "Taktowanie"
+
+msgid "Both"
+msgstr "Oba"
+
+msgid "Refresh interval"
+msgstr "Częstotliwość odświeżania"
+
+msgid "How often the panel info updates"
+msgstr "Jak często mają się odświeżać informacje na pasku"
+
+msgid "Position"
+msgstr "Pozycja"
+
+msgid "Where the panel info appears"
+msgstr "Gdzie mają się pojawiać informacje na pasku"
+
+msgid "Left"
+msgstr "Lewo"
+
+msgid "Center"
+msgstr "Środek"
+
+msgid "Right"
+msgstr "Prawo"
+
+msgid "Left padding"
+msgstr "Lewy odstęp"
+
+msgid "Left spacing in pixels"
+msgstr "Lewy odstęp w pikselach"
+
+msgid "Right padding"
+msgstr "Prawy odstęp"
+
+msgid "Right spacing in pixels"
+msgstr "Prawy odstęp w pikselach"
+
+msgid "Backend integration"
+msgstr "Integracja backendu"
+
+msgid "Installed: CPU governor switching is enabled"
+msgstr "Zainstalowano: przełączanie governorów CPU jest aktywne"
+
+msgid "Not installed: required to enable CPU governor switching"
+msgstr "Nie zainstalowano: wymagane do działania zmiany governora CPU"
+
+msgid "Extension version"
+msgstr "Wersja rozszerzenia"
+
+msgid "Install"
+msgstr "Zainstaluj"
+
+msgid "Uninstall"
+msgstr "Odinstaluj"
+
+msgid "Startup"
+msgstr "Start"
+
+msgid "Behavior after login"
+msgstr "Zachowanie po zalogowaniu"
+
+msgid "Panel"
+msgstr "Panel"
+
+msgid "Top bar display settings"
+msgstr "Ustawienia wyświetlania na górnym pasku"
+
+msgid "System"
+msgstr "System"
+
+msgid "System-level integration"
+msgstr "Integracja systemowa"
