@@ -311,22 +311,31 @@ _updateCpuInfoLabel() {
     let tempDone = false;
     let freqDone = false;
 
+    const mode = settings.get_string('panel-info-mode');
+
     const update = () => {
         if (!tempDone || !freqDone)
             return;
 
         let text = '';
 
-        if (temp !== null && freq !== null)
-            text = `${temp}°C | ${freq} GHz`;
-        else if (temp !== null)
-            text = `${temp}°C`;
-        else if (freq !== null)
-            text = `${freq} GHz`;
-
-        if (cpuInfoLabel) {
-            cpuInfoLabel.set_text(text);
+        if (mode === 'both') {
+            if (temp !== null && freq !== null)
+                text = `${temp}°C | ${freq} GHz`;
+            else if (temp !== null)
+                text = `${temp}°C`;
+            else if (freq !== null)
+                text = `${freq} GHz`;
+        } else if (mode === 'temperature') {
+            if (temp !== null)
+                text = `${temp}°C`;
+        } else if (mode === 'frequency') {
+            if (freq !== null)
+                text = `${freq} GHz`;
         }
+
+        if (cpuInfoLabel)
+            cpuInfoLabel.set_text(text);
     };
 
     this._getCpuTemperature((t) => {
