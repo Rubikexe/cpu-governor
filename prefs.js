@@ -37,6 +37,8 @@ function getBackendState() {
 }
 export default class CpuGovernorPreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
+    let integrationTimeoutId = null;
+    let signalIds = [];
         this.initTranslations();
 
         const settings = this.getSettings('org.gnome.shell.extensions.cpu-governor');
@@ -47,6 +49,8 @@ export default class CpuGovernorPreferences extends ExtensionPreferences {
             title: this.gettext('CPU Governor'),
             icon_name: 'power-profile-balanced-symbolic',
         });
+        
+        
 
         // === Boot boost ===
         const bootBoostRow = new Adw.SwitchRow({
@@ -262,6 +266,7 @@ export default class CpuGovernorPreferences extends ExtensionPreferences {
         integrationButton.connect('clicked', () => {
             const state = getBackendState();
             const wasInstalled = state !== 'missing';
+                
 
             const scriptPath = wasInstalled
                 ? `${this.path}/uninstall-system-helper.sh`
@@ -281,12 +286,17 @@ export default class CpuGovernorPreferences extends ExtensionPreferences {
                     } catch (e) {
                         log(`CPU GOV integration command failed: ${e}`);
                     }
-
-                    GLib.timeout_add(GLib.PRIORITY_DEFAULT, 700, () => {
-                        updateIntegrationUI();
-                        integrationButton.set_sensitive(true);
-                        return GLib.SOURCE_REMOVE;
-                    });
+                    
+                    if (integrationTimeoutId) {
+                        GLib.Source.remove(integrationTimeoutId);
+                        integrationTimeoutId = null;
+                    }
+                    integrationTimeoutId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 700, () => {
+                    updateIntegrationUI();
+                    integrationButton.set_sensitive(true);
+                    integrationTimeoutId = null;
+                    return GLib.SOURCE_REMOVE;
+        });
                 });
             } catch (e) {
                 log(`CPU GOV integration error: ${e}`);
@@ -311,12 +321,25 @@ export default class CpuGovernorPreferences extends ExtensionPreferences {
         const updateBootRowsSensitivity = () => {
             durationRow.set_sensitive(settings.get_boolean('boot-boost-enabled'));
         };
-
-        settings.connect('changed::show-panel-info', updatePanelRowsSensitivity);
-        settings.connect('changed::boot-boost-enabled', updateBootRowsSensitivity);
+        signalIds.push(settings.connect('changed::show-panel-info', updatePanelRowsSensitivity));
+        signalIds.push(settings.connect('changed::boot-boost-enabled', updateBootRowsSensitivity));
 
         updatePanelRowsSensitivity();
         updateBootRowsSensitivity();
+        
+      window.connect('destroy', () => {
+    if (integrationTimeoutId) {
+        GLib.Source.remove(integrationTimeoutId);
+        integrationTimeoutId = null;
+    }
+
+    for (const id of signalIds) {
+        try {
+            settings.disconnect(id);
+        } catch {}
+    }
+    signalIds = [];
+});
 
         // === GROUPS ===
         const startupGroup = new Adw.PreferencesGroup({

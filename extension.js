@@ -39,18 +39,33 @@ let refreshTimeoutId = null;
 let bootBoostTimeoutId = null;
 let settingsSignalIds = [];
 
-function readFile(path) {
+function readFileAsync(path, callback) {
     try {
-        const [ok, contents] = GLib.file_get_contents(path);
-        if (!ok)
-            return null;
+        const file = Gio.File.new_for_path(path);
 
-        return new TextDecoder().decode(contents).trim();
-    } catch {
-        return null;
+        file.load_contents_async(null, (fileObj, res) => {
+            try {
+                const [ok, contents] = fileObj.load_contents_finish(res);
+
+                if (!ok) {
+                    callback(null);
+                    return;
+                }
+
+                const text = new TextDecoder().decode(contents).trim();
+                callback(text);
+
+            } catch (e) {
+                log(`readFileAsync error: ${e}`);
+                callback(null);
+            }
+        });
+
+    } catch (e) {
+        log(`readFileAsync error: ${e}`);
+        callback(null);
     }
 }
-
 const CpuGovernorTile = GObject.registerClass(
 class CpuGovernorTile extends QuickSettings.QuickMenuToggle {
     _init(extension) {
@@ -109,6 +124,7 @@ export default class CpuGovernorExtension extends Extension {
         this._updatePowerProfilesVisibility();
         this._runBootBoost();
         this._updateGovernor();
+        this._updateCpuInfoLabel();
         this._startRefreshLoop();
         this._notifyIfBackendMissing();
     }
@@ -119,6 +135,13 @@ export default class CpuGovernorExtension extends Extension {
         this._stopBootBoost();
         this._restorePowerProfilesVisibility();
         this._destroyUi();
+        if (this._notification && this._notifId) {
+        try {
+            this._notification.disconnect(this._notifId);
+        } catch {}
+        this._notifId = null;
+        this._notification = null;
+    }
 
         settings = null;
     }
@@ -281,49 +304,57 @@ export default class CpuGovernorExtension extends Extension {
         );
     }
 
-    _updateCpuInfoLabel() {
-        if (!cpuInfoLabel)
+_updateCpuInfoLabel() {
+    let temp = null;
+    let freq = null;
+
+    let tempDone = false;
+    let freqDone = false;
+
+    const update = () => {
+        if (!tempDone || !freqDone)
             return;
 
-        const temp = this._getCpuTemperature();
-        const freq = this._getCpuFrequency();
-        const mode = settings.get_string('panel-info-mode');
+        let text = '';
 
-        const tempText = temp !== null ? `${temp}°C` : null;
-        const freqText = freq !== null ? `${freq} GHz` : null;
+        if (temp !== null && freq !== null)
+            text = `${temp}°C | ${freq} GHz`;
+        else if (temp !== null)
+            text = `${temp}°C`;
+        else if (freq !== null)
+            text = `${freq} GHz`;
 
-        let text = '--';
-
-        if (mode === 'temperature') {
-            text = tempText ?? '--°C';
-        } else if (mode === 'frequency') {
-            text = freqText ?? '-- GHz';
-        } else {
-            const parts = [];
-            if (tempText)
-                parts.push(tempText);
-            if (freqText)
-                parts.push(freqText);
-
-            text = parts.length > 0 ? parts.join(' | ') : '--';
+        if (cpuInfoLabel) {
+            cpuInfoLabel.set_text(text);
         }
+    };
 
-        cpuInfoLabel.set_text(text);
-    }
+    this._getCpuTemperature((t) => {
+        temp = t;
+        tempDone = true;
+        update();
+    });
 
-    _startRefreshLoop() {
-        const interval = Math.max(1, settings.get_int('refresh-interval'));
+    this._getCpuFrequency((f) => {
+        freq = f;
+        freqDone = true;
+        update();
+    });
+}
 
-        refreshTimeoutId = GLib.timeout_add_seconds(
-            GLib.PRIORITY_DEFAULT,
-            interval,
-            () => {
-                this._updateGovernor();
-                return GLib.SOURCE_CONTINUE;
-            }
-        );
-    }
+_startRefreshLoop() {
+    const interval = Math.max(1, settings.get_int('refresh-interval'));
 
+    refreshTimeoutId = GLib.timeout_add_seconds(
+        GLib.PRIORITY_DEFAULT,
+        interval,
+        () => {
+            this._updateGovernor();
+            this._updateCpuInfoLabel();
+            return GLib.SOURCE_CONTINUE;
+        }
+    );
+}
     _stopRefreshLoop() {
         if (refreshTimeoutId) {
             GLib.source_remove(refreshTimeoutId);
@@ -367,13 +398,14 @@ export default class CpuGovernorExtension extends Extension {
         }
     }
 
-    _setGovernor(governor) {
+ _setGovernor(governor) {
     try {
         if (!['powersave', 'schedutil', 'performance'].includes(governor))
             return;
 
-        GLib.spawn_command_line_sync(
-            `sh -c "echo ${governor} > /var/lib/cpu-governor/request"`
+        Gio.Subprocess.new(
+            ['sh', '-c', `echo ${governor} > /var/lib/cpu-governor/request`],
+            Gio.SubprocessFlags.NONE
         );
 
         this._updateGovernor();
@@ -381,83 +413,103 @@ export default class CpuGovernorExtension extends Extension {
         log(`CPU GOV set governor error: ${e}`);
     }
 }
-
     _updateGovernor() {
-        try {
-            const governor = readFile('/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor');
-            if (!governor)
+    readFileAsync('/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor', (governor) => {
+        if (!governor)
+            return;
+
+        const iconName = GOVERNOR_ICONS[governor] || 'power-profile-balanced-symbolic';
+        const iconColor = GOVERNOR_COLORS[governor] || '#ffffff';
+        const label = GOVERNOR_NAMES[governor] || governor;
+
+        if (cpuTile) {
+            cpuTile.subtitle = label;
+            cpuTile.gicon = Gio.icon_new_for_string(iconName);
+            cpuTile.updateSelection(governor);
+        }
+
+        if (quickSettingsIcon) {
+            quickSettingsIcon.gicon = Gio.icon_new_for_string(iconName);
+            quickSettingsIcon.set_style(`color: ${iconColor};`);
+        }
+
+        this._updateCpuInfoLabel();
+    });
+}
+
+    _getCpuTemperature(callback) {
+    try {
+        const hwmonDir = Gio.File.new_for_path('/sys/class/hwmon');
+        const enumerator = hwmonDir.enumerate_children(
+            'standard::name',
+            Gio.FileQueryInfoFlags.NONE,
+            null
+        );
+
+        let info;
+        const dirs = [];
+
+        while ((info = enumerator.next_file(null)) !== null) {
+            dirs.push(info.get_name());
+        }
+
+        const checkNext = (index) => {
+            if (index >= dirs.length) {
+                callback(null);
                 return;
-
-            const iconName = GOVERNOR_ICONS[governor] || 'power-profile-balanced-symbolic';
-            const iconColor = GOVERNOR_COLORS[governor] || '#ffffff';
-            const label = GOVERNOR_NAMES[governor] || governor;
-
-            if (cpuTile) {
-                cpuTile.subtitle = label;
-                cpuTile.gicon = Gio.icon_new_for_string(iconName);
-                cpuTile.updateSelection(governor);
             }
 
-            if (quickSettingsIcon) {
-                quickSettingsIcon.gicon = Gio.icon_new_for_string(iconName);
-                quickSettingsIcon.set_style(`color: ${iconColor};`);
-            }
+            const dirName = dirs[index];
+            const basePath = `/sys/class/hwmon/${dirName}`;
 
-            this._updateCpuInfoLabel();
-        } catch (e) {
-            log(`CPU GOV update error: ${e}`);
-        }
+            readFileAsync(`${basePath}/name`, (sensorName) => {
+                if (sensorName !== 'k10temp' && sensorName !== 'coretemp') {
+                    checkNext(index + 1);
+                    return;
+                }
+
+                readFileAsync(`${basePath}/temp1_input`, (temp) => {
+                    if (!temp) {
+                        checkNext(index + 1);
+                        return;
+                    }
+
+                    const value = parseInt(temp, 10);
+                    if (!Number.isNaN(value) && value > 0) {
+                        callback(Math.round(value / 1000));
+                    } else {
+                        checkNext(index + 1);
+                    }
+                });
+            });
+        };
+
+        checkNext(0);
+
+    } catch (e) {
+        log(`CPU GOV temp error: ${e}`);
+        callback(null);
     }
+    
+}
 
-    _getCpuTemperature() {
-        try {
-            const hwmonDir = Gio.File.new_for_path('/sys/class/hwmon');
-            const enumerator = hwmonDir.enumerate_children(
-                'standard::name',
-                Gio.FileQueryInfoFlags.NONE,
-                null
-            );
+    _getCpuFrequency(callback) {
 
-            let info;
-            while ((info = enumerator.next_file(null)) !== null) {
-                const dirName = info.get_name();
-                const basePath = `/sys/class/hwmon/${dirName}`;
-
-                const sensorName = readFile(`${basePath}/name`);
-                if (sensorName !== 'k10temp' && sensorName !== 'coretemp')
-                    continue;
-
-                const temp = readFile(`${basePath}/temp1_input`);
-                if (!temp)
-                    continue;
-
-                const value = parseInt(temp, 10);
-                if (!Number.isNaN(value) && value > 0)
-                    return Math.round(value / 1000);
-            }
-        } catch (e) {
-            log(`CPU GOV temp error: ${e}`);
-        }
-
-        return null;
-    }
-
-    _getCpuFrequency() {
-        try {
-            const freq = readFile('/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq');
-            if (!freq)
-                return null;
-
-            const value = parseInt(freq, 10);
-            if (!Number.isNaN(value) && value > 0)
-                return (value / 1000000).toFixed(2);
-        } catch (e) {
-            log(`CPU GOV freq error: ${e}`);
+    readFileAsync('/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq', (freq) => {
+    log(`FREQ READ: ${freq}`);
+        if (!freq) {
+            callback(null);
+            return;
         }
 
-        return null;
-    }
-
+        const value = parseInt(freq, 10);
+        if (!Number.isNaN(value) && value > 0) {
+            callback((value / 1000000).toFixed(2));
+        } else {
+            callback(null);
+        }
+    });
+}
     _updatePowerProfilesVisibility() {
         try {
             const shouldHide = settings.get_boolean('hide-power-profile-tile');
@@ -506,10 +558,10 @@ export default class CpuGovernorExtension extends Extension {
         notification.addAction(_('Open Settings'), () => {
             this.openPreferences();
         });
-        notification.connect('activated', () => {
+        this._notifId = notification.connect('activated', () => {
             this.openPreferences();
         });
-
+            this._notification = notification;
         source.addNotification(notification);
     } catch (e) {
         log(`CPU GOV backend notification error: ${e}`);
