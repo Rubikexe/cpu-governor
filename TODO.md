@@ -1,6 +1,6 @@
 # CPU Governor TODO
 
-## v2 ideas
+## v4 ideas
 - Detect available governors dynamically
 - Hide unsupported governor modes
 - Improve distro compatibility

@@ -2,7 +2,7 @@
 
 **CPU Governor** is a GNOME Shell extension that lets you quickly switch CPU governor modes directly from **Quick Settings**, with optional CPU temperature and frequency display in the top bar.
 
-This project started as a personal tool and is now being released publicly as **version 2**.
+This project started as a personal tool and is now being released publicly as **version 3**.
 
 ---
 
@@ -126,8 +126,6 @@ The extension includes settings for:
 ---
 
 ## Project Status
-
-This is the **first public release** of CPU Governor.
 
 The extension is currently focused on:
 
